@@ -25,15 +25,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      overflow: hidden;
+      overflow: hidden; /* Ensure no unwanted scrollbars */
     }
-h2 {
-      text-align: center;
-      color: #ff9900;
-      margin-bottom: 1.5rem;
-      font-size: 1.3rem;
-		padding-top: calc(env(safe-area-inset-top) + 45px);
-    }
+
     .matrix-overlay {
       position: fixed;
       width: 100%;
@@ -62,11 +56,12 @@ h2 {
       align-items: center;
       justify-content: center;
       padding-top: 20px;
+      width: 100%; /* Ensure it takes full width */
     }
 
     video.avatar {
       width: 100%;
-      max-height: 400px;
+      max-height: 400px; /* Keep max height for larger screens */
       object-fit: contain;
       background: none;
       border: none;
@@ -76,8 +71,8 @@ h2 {
 
     .word-box {
       z-index: 2;
-      width: 100%;
-      max-width: 600px;
+      width: 90%; /* Changed to a percentage for responsiveness */
+      max-width: 600px; /* Max width for larger screens */
       min-height: 400px;
       background: rgba(0, 0, 0, 0.7);
       border: 2px solid #00ff9f;
@@ -86,7 +81,7 @@ h2 {
       padding: 20px;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
+      justify-content: flex-start; 
       align-items: center;
       box-shadow: 0 0 15px #00ff9f55;
     }
@@ -101,47 +96,15 @@ h2 {
       margin-top: 10px;
     }
 
-    .words-grid {
-  display: flex;
-  flex-wrap: wrap;           /* اجازه میده دکمه‌ها به خط بعد برن */
-  gap: 10px;                 /* فاصله بین دکمه‌ها بهتر با gap */
-  width: 100%;
-  margin-top: 20px;
-  justify-content: center;   /* وسط چین شدن بهتر */
-}
-
-.word-button {
-  flex: 1 1 100px;           /* حداقل عرض 120px، قابل رشد و کوچک شدن */
-  margin: 0;                 /* فاصله با gap تنظیم میشه */
-  padding: 10px;
-  border: 1px solid #00ff9f;
-  background-color: transparent;
-  color: #00ff9f;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.3s;
-  white-space: nowrap;       /* جلوگیری از شکستن داخل کلمه */
-  overflow: hidden;
-  text-overflow: ellipsis;   /* اضافه کردن ... اگر خیلی طولانی باشه */
-  box-sizing: border-box;
-  max-width: 150px;          /* حداکثر عرض */
-}
-
-.word-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-	  .hp-display {
+    .hp-display {
       font-size: 1.2rem;
-      margin-bottom: 15px; /* فاصله از کلمات */
+      margin-bottom: 15px; 
       text-align: center;
       width: 100%;
     }
 
-    /* Styles for the typing effect */
     .typing-text {
-      font-size: 1rem;
+      font-size: 1.8rem;
       text-align: center;
       width: 100%;
       white-space: nowrap;
@@ -155,12 +118,12 @@ h2 {
       to { width: 100% }
     }
 
- .game-over-message {
-      font-size: 1.3rem;
+    .game-over-message {
+      font-size: 1.8rem;
       text-align: center;
       width: 100%;
       padding: 20px;
-      animation: fadeIn 2s forwards; /* A simple fade-in for the message */
+      animation: fadeIn 2s forwards; 
     }
 
     @keyframes fadeIn {
@@ -169,36 +132,136 @@ h2 {
     }
 
     .win-message {
-        color: #00ff9f; /* Green for win */
+        color: #00ff9f; 
     }
 
     .lose-message {
-        color: #ff3c00; /* Red for lose */
+        color: #ff3c00; 
     }
-	   .restart-button {
-      margin-top: 30px; /* فاصله از پیام پایان بازی */
+
+    .words-grid {
+      display: flex;
+      flex-wrap: wrap;           
+      gap: 10px;                 
+      width: 100%;
+      margin-top: 20px;
+      justify-content: center;   
+    }
+
+    .word-button {
+      flex: 1 1 120px;           /* Base for flex-basis (minimum width for each item) */
+      padding: 10px;
+      border: 1px solid #00ff9f;
+      background-color: transparent;
+      color: #00ff9f;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.3s;
+      white-space: nowrap;       
+      overflow: hidden;
+      text-overflow: ellipsis;   
+      box-sizing: border-box;
+      max-width: 150px;          /* Maximum width for each button */
+    }
+
+    .word-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .restart-button {
+      margin-top: 30px; 
       padding: 12px 25px;
       border: 2px solid #00ff9f;
       background-color: transparent;
       color: #00ff9f;
       font-family: 'Fira Code', monospace;
-      font-size: 1rem;
+      font-size: 1.2rem;
       text-align: center;
       cursor: pointer;
       border-radius: 6px;
-      transition: background 0.3s, opacity 1s ease-in; /* اضافه کردن transition برای opacity */
-      opacity: 0; /* دکمه به صورت پیش‌فرض پنهان است */
-      pointer-events: none; /* تا زمانی که opacity صفر است، قابل کلیک نباشد */
+      transition: background 0.3s, opacity 1s ease-in;
+      opacity: 0; 
+      pointer-events: none; 
     }
 
     .restart-button:hover {
       background-color: rgba(0, 255, 150, 0.2);
     }
 
-    /* Animation class for fade-in */
     .fade-in {
         opacity: 1;
-        pointer-events: all; /* قابل کلیک شود وقتی ظاهر می‌شود */
+        pointer-events: all;
+    }
+
+    /* --- Media Queries for Responsiveness --- */
+
+    @media (max-width: 768px) {
+      /* Adjustments for tablets and smaller */
+      .word-box {
+        min-height: 300px; /* Slightly less height for smaller screens */
+        padding: 15px;
+      }
+
+      .word-box h2 {
+        font-size: 1.3rem;
+      }
+
+      .hp-display {
+        font-size: 1rem;
+        margin-bottom: 10px;
+      }
+
+      .typing-text, .game-over-message {
+        font-size: 1.5rem;
+      }
+
+      .word-button {
+        flex: 1 1 calc(33% - 14px); /* Three buttons per row with gap consideration */
+        max-width: calc(33% - 14px); /* Max width for 3 buttons per row */
+        font-size: 0.9rem; /* Smaller font for buttons */
+        padding: 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      /* Adjustments for mobile phones */
+      .word-box {
+        min-height: 250px; /* Even less height for small phones */
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+
+      .avatar-container {
+        padding-top: 10px;
+      }
+
+      video.avatar {
+        max-height: 300px; /* Adjust avatar size for smaller screens */
+      }
+
+      .hp-display {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+      }
+
+      .typing-text, .game-over-message {
+        font-size: 1.2rem;
+      }
+
+      .word-button {
+        flex: 1 1 calc(50% - 10px); /* Two buttons per row with gap consideration */
+        max-width: calc(50% - 10px); /* Max width for 2 buttons per row */
+        font-size: 0.8rem; /* Even smaller font for buttons */
+        padding: 6px;
+      }
+
+      .restart-button {
+        font-size: 1rem;
+        padding: 10px 20px;
+        margin-top: 20px;
+      }
     }
  button, a, div {
   outline: none;
@@ -246,7 +309,7 @@ button:focus, a:focus, div:focus {
   console.log("Username:", username);
   
       const audio = document.getElementById('bg-music');
-      audio.volume = 0.3;
+      audio.volume = 0.6;
       const avatar = document.getElementById("avatar-video");
 
       const wordsContainer = document.getElementById("words-container");
