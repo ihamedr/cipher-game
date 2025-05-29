@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cipher Game UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+   * { margin: 0; padding: 0; box-sizing: border-box; }
+	* {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent; /* مخصوص موبایل برای حذف هایلایت */
+}
+
+    body {
+      font-family: 'Fira Code', monospace;
+      background: radial-gradient(ellipse at center, #000 0%, #020c0f 100%);
+      color: #00ff9f;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+h2 {
+      text-align: center;
+      color: #ff9900;
+      margin-bottom: 1.5rem;
+      font-size: 1.3rem;
+		padding-top: calc(env(safe-area-inset-top) + 45px);
+    }
+    .matrix-overlay {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0, 255, 150, 0.05) 0px,
+        rgba(0, 255, 150, 0.05) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+      animation: flicker 3s infinite;
+      z-index: 1;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.25; }
+    }
+
+    .avatar-container {
+      z-index: 2;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 20px;
+    }
+
+    video.avatar {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      background: none;
+      border: none;
+      box-shadow: none;
+      border-radius: 0;
+    }
+
+    .word-box {
+      z-index: 2;
+      width: 100%;
+      max-width: 600px;
+      min-height: 400px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid #00ff9f;
+      border-radius: 8px;
+      margin-bottom: 40px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      box-shadow: 0 0 15px #00ff9f55;
+    }
+
+    .word-box h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+
+    .word-box .mistakes {
+      color: #ff3c00;
+      margin-top: 10px;
+    }
+
+    .words-grid {
+  display: flex;
+  flex-wrap: wrap;           /* اجازه میده دکمه‌ها به خط بعد برن */
+  gap: 10px;                 /* فاصله بین دکمه‌ها بهتر با gap */
+  width: 100%;
+  margin-top: 20px;
+  justify-content: center;   /* وسط چین شدن بهتر */
+}
+
+.word-button {
+  flex: 1 1 100px;           /* حداقل عرض 120px، قابل رشد و کوچک شدن */
+  margin: 0;                 /* فاصله با gap تنظیم میشه */
+  padding: 10px;
+  border: 1px solid #00ff9f;
+  background-color: transparent;
+  color: #00ff9f;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.3s;
+  white-space: nowrap;       /* جلوگیری از شکستن داخل کلمه */
+  overflow: hidden;
+  text-overflow: ellipsis;   /* اضافه کردن ... اگر خیلی طولانی باشه */
+  box-sizing: border-box;
+  max-width: 150px;          /* حداکثر عرض */
+}
+
+.word-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+	  .hp-display {
+      font-size: 1.2rem;
+      margin-bottom: 15px; /* فاصله از کلمات */
+      text-align: center;
+      width: 100%;
+    }
+
+    /* Styles for the typing effect */
+    .typing-text {
+      font-size: 1rem;
+      text-align: center;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      margin: auto;
+      animation: typing 2s steps(10, end);
+    }
+
+    @keyframes typing {
+      from { width: 0 }
+      to { width: 100% }
+    }
+
+ .game-over-message {
+      font-size: 1.3rem;
+      text-align: center;
+      width: 100%;
+      padding: 20px;
+      animation: fadeIn 2s forwards; /* A simple fade-in for the message */
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .win-message {
+        color: #00ff9f; /* Green for win */
+    }
+
+    .lose-message {
+        color: #ff3c00; /* Red for lose */
+    }
+	   .restart-button {
+      margin-top: 30px; /* فاصله از پیام پایان بازی */
+      padding: 12px 25px;
+      border: 2px solid #00ff9f;
+      background-color: transparent;
+      color: #00ff9f;
+      font-family: 'Fira Code', monospace;
+      font-size: 1rem;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.3s, opacity 1s ease-in; /* اضافه کردن transition برای opacity */
+      opacity: 0; /* دکمه به صورت پیش‌فرض پنهان است */
+      pointer-events: none; /* تا زمانی که opacity صفر است، قابل کلیک نباشد */
+    }
+
+    .restart-button:hover {
+      background-color: rgba(0, 255, 150, 0.2);
+    }
+
+    /* Animation class for fade-in */
+    .fade-in {
+        opacity: 1;
+        pointer-events: all; /* قابل کلیک شود وقتی ظاهر می‌شود */
+    }
+ button, a, div {
+  outline: none;
+}
+
+button:focus, a:focus, div:focus {
+  outline: none;
+}
+  </style>
+</head>
+<body>
+
+  <div class="matrix-overlay"></div>
+
+  <div class="avatar-container">
+    <video class="avatar" autoplay muted loop id="avatar-video">
+      <source src="avatar.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+  </div>
+
+  <div class="word-box">
+    <div class="hp-display" id="hp-info"></div> 
+    
+    <div id="words-container" class="words-grid"></div>
+    <div class="mistakes" id="mistakes-info"></div> 
+<button id="restart-button" class="restart-button">Restart</button>
+  </div>
+
+  <audio id="bg-music" src="cipher404.mp3" loop></audio>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+
+  const userId = tg.initDataUnsafe?.user?.id?.toString();
+  const username = tg.initDataUnsafe?.user?.username || "unknown";
+
+  if (!userId) {
+    alert("User ID not found. Please open this in Telegram.");
+    return;
+  }
+
+  console.log("User ID:", userId);
+  console.log("Username:", username);
+  
+      const audio = document.getElementById('bg-music');
+      audio.volume = 0.3;
+      const avatar = document.getElementById("avatar-video");
+
+      const wordsContainer = document.getElementById("words-container");
+      const hpInfo = document.getElementById("hp-info");
+      const mistakesInfo = document.getElementById("mistakes-info");
+      const restartButton = document.getElementById("restart-button"); // NEW: Get restart button element
+
+      let puzzleWords = [];
+      let attemptsLeft = 3;
+      let turn = null;
+      let userHp = 0;
+      let cipherHp = 0;
+      let gameOver = false;
+      let winnerIs = null; 
+      let guessedWords = new Set(); 
+
+      // NEW: Add event listener for restart button
+      restartButton.addEventListener('click', () => {
+        location.reload(); // Reloads the entire page
+      });
+
+      function showLoadingMessage() {
+        wordsContainer.innerHTML = `<div class="typing-text" id="loading-message"></div>`;
+        const loadingMessageElement = document.getElementById('loading-message');
+        const text = "Loading...";
+        let i = 0;
+        function typeWriter() {
+          if (i < text.length) {
+            loadingMessageElement.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typeWriter, 150);
+          }
+        }
+        typeWriter();
+        hpInfo.textContent = "";
+      }
+
+      function enableAudio() {
+        audio.play().catch((e) => console.log('Auto-play blocked:', e));
+        document.removeEventListener('click', enableAudio);
+      }
+      document.addEventListener('click', enableAudio);
+
+      showLoadingMessage();
+
+
+      fetch(`https://cipher-proxy.onrender.com/proxy?action=startGame&userId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          puzzleWords = data.puzzleWords;
+          attemptsLeft = 3;
+          userHp = data.userHp;
+          cipherHp = data.cipherHp;
+          guessedWords.clear(); 
+          renderWords();
+          updateHpDisplay(); 
+        })
+        .catch(error => {
+          console.error("Error starting game:", error);
+          wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to load game. Please try again.</div>`;
+          hpInfo.textContent = "";
+        });
+
+
+      function renderWords() {
+        wordsContainer.innerHTML = "";
+        const loadingMessageElement = document.getElementById('loading-message');
+        if (loadingMessageElement) {
+            loadingMessageElement.remove();
+        }
+        mistakesInfo.textContent = "";
+        puzzleWords.forEach(word => {
+          const btn = document.createElement("button");
+          btn.textContent = word;
+          btn.className = "word-button";
+          btn.disabled = guessedWords.has(word); 
+          btn.onclick = () => submitGuess(word, btn);
+          wordsContainer.appendChild(btn);
+        });
+      }
+
+      function updateHpDisplay() {
+        hpInfo.textContent = `User HP: ${userHp} | Cipher HP: ${cipherHp}`;
+      }
+
+      function submitGuess(word, button) {
+        if (turn || gameOver) return; 
+        
+        Array.from(wordsContainer.children).forEach(btn => {
+            if (btn.tagName === 'BUTTON') {
+                btn.disabled = true;
+            }
+        });
+
+        fetch(`https://cipher-proxy.onrender.com/proxy?action=submitGuess&userId=${userId}&word=${word}`)
+          .then(res => res.json())
+          .then(result => {
+            if (result.error) {
+              alert(result.error);
+              Array.from(wordsContainer.children).forEach(btn => {
+                if (btn.tagName === 'BUTTON' && btn !== button) {
+                    btn.disabled = false;
+                }
+              });
+              return;
+            }
+
+            button.disabled = true;
+            guessedWords.add(word); 
+
+            if (result.correct || (result.attemptsLeft === 0 && result.nextTurn === "cipher")) {
+                turn = result.nextTurn; 
+                fetch(`https://cipher-proxy.onrender.com/proxy?action=fire&userId=${userId}`)
+                .then(fireRes => fireRes.json())
+                .then(fireData => {
+                    userHp = fireData.userHp;
+                    cipherHp = fireData.cipherHp;
+                    
+                    if (fireData.gameOver) {
+                        gameOver = true;
+                        winnerIs = fireData.winner; 
+                    }
+
+                    let videoSrc;
+                    if (turn === "user") {
+                        videoSrc = (fireData.bullet === "full" ? "usershot.mp4" : "userblank.mp4");
+                    } else { 
+                        videoSrc = (fireData.bullet === "full" ? "ciphershot.mp4" : "cipherblank.mp4");
+                    }
+                    playVideo(videoSrc); 
+
+                })
+                .catch(error => {
+                    console.error("Error during fire action:", error);
+                    alert("An error occurred during turn progression (fire action).");
+                    Array.from(wordsContainer.children).forEach(btn => {
+                        if (btn.tagName === 'BUTTON' && !btn.disabled) {
+                            btn.disabled = false;
+                        }
+                    });
+                    turn = null;
+                });
+
+            } else {
+              attemptsLeft = result.attemptsLeft; 
+              mistakesInfo.textContent = `Attempts left: ${attemptsLeft}, common letters: ${result.commonLetters}`;
+              Array.from(wordsContainer.children).forEach(btn => {
+                  if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) { 
+                      btn.disabled = false;
+                  }
+              });
+            }
+          })
+          .catch(error => {
+            console.error("Error submitting guess:", error);
+            Array.from(wordsContainer.children).forEach(btn => {
+                if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) {
+                    btn.disabled = false;
+                }
+            });
+            alert("An error occurred. Please try again.");
+          });
+      }
+
+      function handleTurn(bulletType) {}
+		  
+      function playVideo(src) {
+        avatar.src = src;
+        avatar.loop = false;
+        avatar.muted = false; 
+        avatar.play();
+        avatar.onended = () => {
+            updateHpDisplay(); 
+
+            if (gameOver) {
+                displayGameOverMessage(winnerIs); 
+            } else {
+                avatar.src = "avatar.mp4";
+                avatar.loop = true;
+                avatar.muted = true; 
+                avatar.play();
+                
+                guessedWords.clear(); 
+                fetch(`https://cipher-proxy.onrender.com/proxy?action=generateNewPuzzle&userId=${userId}`)
+                    .then(puzzleRes => puzzleRes.json())
+                    .then(puzzleData => {
+                        if (puzzleData.error) {
+                            console.error("Puzzle error:", puzzleData.error);
+                            wordsContainer.innerHTML = `<div class="game-over-message lose-message">Error loading next puzzle</div>`;
+                            return;
+                        }
+
+                        puzzleWords = puzzleData.puzzleWords;
+                        attemptsLeft = puzzleData.attemptsLeft || 3;
+                        renderWords();
+                        mistakesInfo.textContent = "";
+                        turn = null; 
+                    })
+                    .catch(error => {
+                        console.error("Error generating new puzzle:", error);
+                        wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to get new puzzle.</div>`;
+                        turn = null;
+                    });
+            }
+        };
+      }
+
+      function displayGameOverMessage(winner) {
+        wordsContainer.innerHTML = '';
+        hpInfo.textContent = '';
+        mistakesInfo.textContent = '';
+
+        let message = '';
+        let messageClass = '';
+        let finalVideoSrc = '';
+
+        if (winner === "user") {
+          message = "You escaped Liminal";
+          messageClass = "win-message";
+          finalVideoSrc = "win.mp4"; 
+        } else {
+          message = "Access terminated";
+          messageClass = "lose-message";
+          finalVideoSrc = "lose.mp4"; 
+        }
+
+        const gameOverDiv = document.createElement('div');
+        gameOverDiv.className = `game-over-message ${messageClass}`;
+        
+        let i = 0;
+        function typeGameOverText() {
+          if (i < message.length) {
+            gameOverDiv.innerHTML += message.charAt(i);
+            i++;
+            setTimeout(typeGameOverText, 100);
+          } else {
+            // NEW: After message is typed, show the restart button with a fade-in
+            restartButton.classList.add('fade-in'); 
+          }
+        }
+        wordsContainer.appendChild(gameOverDiv);
+        typeGameOverText();
+
+        avatar.src = finalVideoSrc;
+        avatar.loop = true;
+        avatar.muted = false; 
+        avatar.play();
+      }
+
+    });
+  </script>
+</body>
+</html>
