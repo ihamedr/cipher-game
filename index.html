@@ -340,7 +340,7 @@
 <body>
 <div id="loading-screen">
     <div class="loading-content">
-      <div class="typing-text" id="loading-message">Loading</div>
+      <div class="typing-text" id="loading-message" loop>Loading</div>
       <div class="progress-bar-container">
         <div class="bar-segment"></div>
         <div class="bar-segment"></div>
@@ -713,8 +713,6 @@
             playCachedVideo(finalVideoSrc); 
         }
 
-        // --- Initial calls to start the application flow ---
-        attemptAutoplay(); // Attempt to autoplay background music
         preloadVideos(startGameLogic); // Start preloading and then begin game logic
     });
 </script>
