@@ -3,265 +3,316 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cipher Game UI</title>
+  <title>Cipher Game</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-	<script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-   * { margin: 0; padding: 0; box-sizing: border-box; }
-	* {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  outline: none !important;
-  -webkit-tap-highlight-color: transparent; /* مخصوص موبایل برای حذف هایلایت */
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent; /* مخصوص موبایل برای حذف هایلایت */
+  }
 
-    body {
-      font-family: 'Fira Code', monospace;
-      background: radial-gradient(ellipse at center, #000 0%, #020c0f 100%);
-      color: #00ff9f;
-      height: 100vh;
+  body {
+    font-family: 'Fira Code', monospace;
+    background: radial-gradient(ellipse at center, #000 0%, #020c0f 100%);
+    color: #00ff9f;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden; /* Ensure no unwanted scrollbars */
+  }
+
+  .matrix-overlay {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 255, 150, 0.05) 0px,
+      rgba(0, 255, 150, 0.05) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+    animation: flicker 3s infinite;
+    z-index: 1;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.25; }
+  }
+
+  .avatar-container {
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%; /* Ensure it takes full width */
+  }
+
+  video.avatar {
+    width: 100%;
+    max-height: 400px; /* Keep max height for larger screens */
+    object-fit: contain;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    transition: opacity 0.5s ease-in-out; /* NEW: Add transition for opacity */
+    opacity: 1; /* Ensure default state is visible */
+  }
+
+  /* NEW: Video fade classes */
+  .avatar.fade-out {
+    opacity: 0;
+  }
+
+  .avatar.fade-in-transition { /* Use a distinct name for the fade-in transition step */
+    opacity: 0; /* Start invisible for fade-in */
+  }
+  .avatar.fade-in {
+    opacity: 1;
+  }
+
+  .word-box {
+    z-index: 2;
+    width: 90%; /* Changed to a percentage for responsiveness */
+    max-width: 600px; /* Max width for larger screens */
+    min-height: 400px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ff9f;
+    border-radius: 8px;
+    margin-bottom: 40px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+    align-items: center;
+    box-shadow: 0 0 15px #00ff9f55;
+  }
+
+  .word-box h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+
+  .word-box .mistakes {
+    color: #ff3c00;
+    margin-top: 10px;
+    font-size: 0.9rem; /* Adjust font size here */
+  }
+
+  .hp-display {
+    font-size: 1.2rem;
+    margin-bottom: 15px; 
+    text-align: center;
+    width: 100%;
+  }
+
+  .typing-text {
+    font-size: 1.8rem;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    margin: auto;
+    animation: typing 2s steps(10, end);
+  }
+
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+
+  .game-over-message {
+    font-size: 1.8rem;
+    text-align: center;
+    width: 100%;
+    padding: 20px;
+    animation: fadeIn 2s forwards; 
+  }
+
+  @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+  }
+
+  .win-message {
+      color: #00ff9f; 
+  }
+
+  .lose-message {
+      color: #ff3c00; 
+  }
+
+  .words-grid {
+    display: flex;
+    flex-wrap: wrap;           
+    gap: 10px;                 
+    width: 100%;
+    margin-top: 20px;
+    justify-content: center;   
+  }
+
+  .word-button {
+    flex: 1 1 120px;           /* Base for flex-basis (minimum width for each item) */
+    padding: 10px;
+    border: 1px solid #00ff9f;
+    background-color: transparent;
+    color: #00ff9f;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s;
+    white-space: nowrap;       
+    overflow: hidden;
+    text-overflow: ellipsis;   
+    box-sizing: border-box;
+    max-width: 150px;          /* Maximum width for each button */
+  }
+
+  .word-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .restart-button {
+    margin-top: 30px; 
+    padding: 12px 25px;
+    border: 2px solid #00ff9f;
+    background-color: transparent;
+    color: #00ff9f;
+    font-family: 'Fira Code', monospace;
+    font-size: 1.2rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s, opacity 1s ease-in;
+    opacity: 0; 
+    pointer-events: none; 
+  }
+
+  .restart-button:hover {
+    background-color: rgba(0, 255, 150, 0.2);
+  }
+
+  .fade-in {
+      opacity: 1;
+      pointer-events: all;
+  }
+
+  /* NEW: Progress bar styles */
+  .loading-container {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      overflow: hidden; /* Ensure no unwanted scrollbars */
-    }
-
-    .matrix-overlay {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(0, 255, 150, 0.05) 0px,
-        rgba(0, 255, 150, 0.05) 1px,
-        transparent 1px,
-        transparent 2px
-      );
-      animation: flicker 3s infinite;
-      z-index: 1;
-    }
-
-    @keyframes flicker {
-      0%, 100% { opacity: 0.15; }
-      50% { opacity: 0.25; }
-    }
-
-    .avatar-container {
-      z-index: 2;
-      flex: 1;
-      display: flex;
       align-items: center;
       justify-content: center;
-      width: 100%; /* Ensure it takes full width */
-    }
-
-    video.avatar {
       width: 100%;
-      max-height: 400px; /* Keep max height for larger screens */
-      object-fit: contain;
-      background: none;
-      border: none;
-      box-shadow: none;
-      border-radius: 0;
-    }
+      height: 100%; /* Occupy full height of words-container */
+  }
 
-    .word-box {
-      z-index: 2;
-      width: 90%; /* Changed to a percentage for responsiveness */
-      max-width: 600px; /* Max width for larger screens */
-      min-height: 400px;
-      background: rgba(0, 0, 0, 0.7);
-      border: 2px solid #00ff9f;
-      border-radius: 8px;
-      margin-bottom: 40px;
-      padding: 20px;
+  .progress-bar-container {
+      width: 80%; /* Width of the progress bar */
+      height: 15px; /* Height of the bar */
+      background-color: rgba(0, 255, 150, 0.1);
+      border: 1px solid #00ff9f;
+      margin-top: 20px;
       display: flex;
-      flex-direction: column;
-      justify-content: flex-start; 
-      align-items: center;
-      box-shadow: 0 0 15px #00ff9f55;
+      overflow: hidden; /* Hide overflowing segments */
+  }
+
+  .progress-segment {
+      height: 100%;
+      background-color: #00ff9f;
+      width: 0; /* Will be set by JS */
+      transition: width 0.1s ease-out; /* Optional: add a subtle animation for each segment */
+  }
+
+
+  /* --- Media Queries for Responsiveness --- */
+
+  @media (max-width: 768px) {
+    /* Adjustments for tablets and smaller */
+    .word-box {
+      min-height: 300px; /* Slightly less height for smaller screens */
+      padding: 15px;
     }
 
     .word-box h2 {
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-    }
-
-    .word-box .mistakes {
-      color: #ff3c00;
-      margin-top: 10px;
+      font-size: 1.3rem;
     }
 
     .hp-display {
-      font-size: 1.2rem;
-      margin-bottom: 15px; 
-      text-align: center;
-      width: 100%;
+      font-size: 1rem;
+      margin-bottom: 10px;
     }
 
-    .typing-text {
-      font-size: 1.8rem;
-      text-align: center;
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      margin: auto;
-      animation: typing 2s steps(10, end);
+    .typing-text, .game-over-message {
+      font-size: 1.5rem;
     }
 
-    @keyframes typing {
-      from { width: 0 }
-      to { width: 100% }
-    }
-
-    .game-over-message {
-      font-size: 1.8rem;
-      text-align: center;
-      width: 100%;
-      padding: 20px;
-      animation: fadeIn 2s forwards; 
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    .win-message {
-        color: #00ff9f; 
-    }
-
-    .lose-message {
-        color: #ff3c00; 
-    }
-
-    .words-grid {
-      display: flex;
-      flex-wrap: wrap;           
-      gap: 10px;                 
-      width: 100%;
-      margin-top: 20px;
-      justify-content: center;   
+    .word-box .mistakes { /* Adjust font size for smaller screens too */
+      font-size: 0.8rem; 
     }
 
     .word-button {
-      flex: 1 1 120px;           /* Base for flex-basis (minimum width for each item) */
+      flex: 1 1 calc(33% - 14px); /* Three buttons per row with gap consideration */
+      max-width: calc(33% - 14px); /* Max width for 3 buttons per row */
+      font-size: 0.9rem; /* Smaller font for buttons */
+      padding: 8px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* Adjustments for mobile phones */
+    .word-box {
+      min-height: 250px; /* Even less height for small phones */
       padding: 10px;
-      border: 1px solid #00ff9f;
-      background-color: transparent;
-      color: #00ff9f;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: background 0.3s;
-      white-space: nowrap;       
-      overflow: hidden;
-      text-overflow: ellipsis;   
-      box-sizing: border-box;
-      max-width: 150px;          /* Maximum width for each button */
+      margin-bottom: 20px;
     }
 
-    .word-button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .hp-display {
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .typing-text, .game-over-message {
+      font-size: 1.2rem;
+    }
+
+    .word-box .mistakes { /* Adjust font size for very small screens */
+      font-size: 0.7rem; 
+    }
+
+    .word-button {
+      flex: 1 1 calc(50% - 10px); /* Two buttons per row with gap consideration */
+      max-width: calc(50% - 10px); /* Max width for 2 buttons per row */
+      font-size: 0.8rem; /* Even smaller font for buttons */
+      padding: 6px;
     }
 
     .restart-button {
-      margin-top: 30px; 
-      padding: 12px 25px;
-      border: 2px solid #00ff9f;
-      background-color: transparent;
-      color: #00ff9f;
-      font-family: 'Fira Code', monospace;
-      font-size: 1.2rem;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: background 0.3s, opacity 1s ease-in;
-      opacity: 0; 
-      pointer-events: none; 
+      font-size: 1rem;
+      padding: 10px 20px;
+      margin-top: 20px;
     }
+  }
+  button, a, div {
+    outline: none;
+  }
 
-    .restart-button:hover {
-      background-color: rgba(0, 255, 150, 0.2);
-    }
-
-    .fade-in {
-        opacity: 1;
-        pointer-events: all;
-    }
-
-    /* --- Media Queries for Responsiveness --- */
-
-    @media (max-width: 768px) {
-      /* Adjustments for tablets and smaller */
-      .word-box {
-        min-height: 300px; /* Slightly less height for smaller screens */
-        padding: 15px;
-      }
-
-      .word-box h2 {
-        font-size: 1.3rem;
-      }
-
-      .hp-display {
-        font-size: 1rem;
-        margin-bottom: 10px;
-      }
-
-      .typing-text, .game-over-message {
-        font-size: 1.5rem;
-      }
-
-      .word-button {
-        flex: 1 1 calc(33% - 14px); /* Three buttons per row with gap consideration */
-        max-width: calc(33% - 14px); /* Max width for 3 buttons per row */
-        font-size: 0.9rem; /* Smaller font for buttons */
-        padding: 8px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      /* Adjustments for mobile phones */
-      .word-box {
-        min-height: 250px; /* Even less height for small phones */
-        padding: 10px;
-        margin-bottom: 20px;
-      }
-
-      .hp-display {
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-      }
-
-      .typing-text, .game-over-message {
-        font-size: 1.2rem;
-      }
-
-      .word-button {
-        flex: 1 1 calc(50% - 10px); /* Two buttons per row with gap consideration */
-        max-width: calc(50% - 10px); /* Max width for 2 buttons per row */
-        font-size: 0.8rem; /* Even smaller font for buttons */
-        padding: 6px;
-      }
-
-      .restart-button {
-        font-size: 1rem;
-        padding: 10px 20px;
-        margin-top: 20px;
-      }
-    }
- button, a, div {
-  outline: none;
-}
-
-button:focus, a:focus, div:focus {
-  outline: none;
-}
-  </style>
+  button:focus, a:focus, div:focus {
+    outline: none;
+  }
+</style>
 </head>
 <body>
 
@@ -277,280 +328,368 @@ button:focus, a:focus, div:focus {
   <div class="word-box">
     <div class="hp-display" id="hp-info"></div> 
     
-    <div id="words-container" class="words-grid"></div>
+    <div id="words-container" class="words-grid"></div> 
+
     <div class="mistakes" id="mistakes-info"></div> 
-<button id="restart-button" class="restart-button">Restart</button>
+    <button id="restart-button" class="restart-button">Restart</button>
   </div>
 
   <audio id="bg-music" src="cipher404.mp3" loop></audio>
-<script>
+
+  <script>
     document.addEventListener('DOMContentLoaded', function () {
-  const tg = window.Telegram.WebApp;
-  tg.expand();
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-  const userId = tg.initDataUnsafe?.user?.id?.toString();
-  const username = tg.initDataUnsafe?.user?.username || "unknown";
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        const username = tg.initDataUnsafe?.user?.username || "unknown";
 
-  if (!userId) {
-    alert("User ID not found. Please open this in Telegram.");
-    return;
-  }
-
-  console.log("User ID:", userId);
-  console.log("Username:", username);
-  
-      const audio = document.getElementById('bg-music');
-      audio.volume = 0.6;
-      const avatar = document.getElementById("avatar-video");
-
-      const wordsContainer = document.getElementById("words-container");
-      const hpInfo = document.getElementById("hp-info");
-      const mistakesInfo = document.getElementById("mistakes-info");
-      const restartButton = document.getElementById("restart-button"); // NEW: Get restart button element
-
-      let puzzleWords = [];
-      let attemptsLeft = 3;
-      let turn = null;
-      let userHp = 0;
-      let cipherHp = 0;
-      let gameOver = false;
-      let winnerIs = null; 
-      let guessedWords = new Set(); 
-
-      // NEW: Add event listener for restart button
-      restartButton.addEventListener('click', () => {
-        location.reload(); // Reloads the entire page
-      });
-
-      function showLoadingMessage() {
-        wordsContainer.innerHTML = `<div class="typing-text" id="loading-message"></div>`;
-        const loadingMessageElement = document.getElementById('loading-message');
-        const text = "Loading...";
-        let i = 0;
-        function typeWriter() {
-          if (i < text.length) {
-            loadingMessageElement.innerHTML += text.charAt(i);
-            i++;
-            setTimeout(typeWriter, 150);
-          }
+        if (!userId) {
+            alert("User ID not found. Please open this in Telegram.");
+            return;
         }
-        typeWriter();
-        hpInfo.textContent = "";
-      }
 
-      function enableAudio() {
-        audio.play().catch((e) => console.log('Auto-play blocked:', e));
-        document.removeEventListener('click', enableAudio);
-      }
-      document.addEventListener('click', enableAudio);
+        console.log("User ID:", userId);
+        console.log("Username:", username);
 
-      showLoadingMessage();
+        const audio = document.getElementById('bg-music');
+        audio.volume = 0.6;
+        const avatar = document.getElementById("avatar-video");
 
+        const wordsContainer = document.getElementById("words-container");
+        const hpInfo = document.getElementById("hp-info");
+        const mistakesInfo = document.getElementById("mistakes-info");
+        const restartButton = document.getElementById("restart-button"); 
 
-      fetch(`https://cipher-proxy.onrender.com/proxy?action=startGame&userId=${userId}`)
-        .then(res => res.json())
-        .then(data => {
-          puzzleWords = data.puzzleWords;
-          attemptsLeft = 3;
-          userHp = data.userHp;
-          cipherHp = data.cipherHp;
-          guessedWords.clear(); 
-          renderWords();
-          updateHpDisplay(); 
-        })
-        .catch(error => {
-          console.error("Error starting game:", error);
-          wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to load game. Please try again.</div>`;
-          hpInfo.textContent = "";
+        let puzzleWords = [];
+        let attemptsLeft = 3;
+        let turn = null;
+        let userHp = 0;
+        let cipherHp = 0;
+        let gameOver = false;
+        let winnerIs = null; 
+        let guessedWords = new Set(); 
+
+        // NEW: List of all video assets to preload
+        const videoAssets = [
+            "avatar.mp4",
+            "usershot.mp4",
+            "userblank.mp4",
+            "ciphershot.mp4",
+            "cipherblank.mp4",
+            "win.mp4",
+            "lose.mp4"
+        ];
+
+        restartButton.addEventListener('click', () => {
+            location.reload(); 
         });
 
-
-      function renderWords() {
-        wordsContainer.innerHTML = "";
-        const loadingMessageElement = document.getElementById('loading-message');
-        if (loadingMessageElement) {
-            loadingMessageElement.remove();
-        }
-        mistakesInfo.textContent = "";
-        puzzleWords.forEach(word => {
-          const btn = document.createElement("button");
-          btn.textContent = word;
-          btn.className = "word-button";
-          btn.disabled = guessedWords.has(word); 
-          btn.onclick = () => submitGuess(word, btn);
-          wordsContainer.appendChild(btn);
-        });
-      }
-
-      function updateHpDisplay() {
-        hpInfo.textContent = `User HP: ${userHp} | Cipher HP: ${cipherHp}`;
-      }
-
-      function submitGuess(word, button) {
-        if (turn || gameOver) return; 
-        
-        Array.from(wordsContainer.children).forEach(btn => {
-            if (btn.tagName === 'BUTTON') {
-                btn.disabled = true;
-            }
-        });
-
-        fetch(`https://cipher-proxy.onrender.com/proxy?action=submitGuess&userId=${userId}&word=${word}`)
-          .then(res => res.json())
-          .then(result => {
-            if (result.error) {
-              alert(result.error);
-              Array.from(wordsContainer.children).forEach(btn => {
-                if (btn.tagName === 'BUTTON' && btn !== button) {
-                    btn.disabled = false;
+        // NEW: showLoadingMessage now also sets up the progress bar
+        function showLoadingMessage() {
+            wordsContainer.innerHTML = `
+                <div class="loading-container">
+                    <div class="typing-text" id="loading-message"></div>
+                    <div class="progress-bar-container" id="progressBarContainer"></div>
+                </div>
+            `;
+            const loadingMessageElement = document.getElementById('loading-message');
+            const text = "Loading...";
+            let i = 0;
+            function typeWriter() {
+                if (i < text.length) {
+                    loadingMessageElement.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 150);
+                } else {
+                    preloadAssets(); // Start preloading after "Loading..." is typed
                 }
-              });
-              return;
+            }
+            typeWriter();
+            hpInfo.textContent = "";
+        }
+
+        // NEW: Preload assets and update progress bar
+        function preloadAssets() {
+            const progressBarContainer = document.getElementById('progressBarContainer');
+            let loadedCount = 0;
+
+            const updateProgressBar = () => {
+                const progress = (loadedCount / videoAssets.length) * 100;
+                // Clear previous segments and create new ones based on progress
+                progressBarContainer.innerHTML = '';
+                const numSegments = Math.floor(progress / 10); // Example: 10 segments for 100%
+                for (let i = 0; i < numSegments; i++) {
+                    const segment = document.createElement('div');
+                    segment.className = 'progress-segment';
+                    segment.style.width = '10%'; // Each segment takes 10% width
+                    progressBarContainer.appendChild(segment);
+                }
+            };
+
+            if (videoAssets.length === 0) {
+                // If no assets to load, immediately proceed
+                onAssetsLoaded();
+                return;
             }
 
-            button.disabled = true;
-            guessedWords.add(word); 
+            videoAssets.forEach(asset => {
+                const video = document.createElement('video');
+                video.src = asset;
+                video.preload = 'auto'; // Important for preloading
+                video.style.display = 'none'; // Keep it hidden
+                document.body.appendChild(video); // Add to DOM to trigger loading
 
-            if (result.correct || (result.attemptsLeft === 0 && result.nextTurn === "cipher")) {
-                turn = result.nextTurn; 
-                fetch(`https://cipher-proxy.onrender.com/proxy?action=fire&userId=${userId}`)
-                .then(fireRes => fireRes.json())
-                .then(fireData => {
-                    userHp = fireData.userHp;
-                    cipherHp = fireData.cipherHp;
-                    
-                    if (fireData.gameOver) {
-                        gameOver = true;
-                        winnerIs = fireData.winner; 
+                video.addEventListener('loadeddata', () => {
+                    loadedCount++;
+                    updateProgressBar();
+                    if (loadedCount === videoAssets.length) {
+                        onAssetsLoaded();
                     }
-
-                    let videoSrc;
-                    if (turn === "user") {
-                        videoSrc = (fireData.bullet === "full" ? "usershot.mp4" : "userblank.mp4");
-                    } else { 
-                        videoSrc = (fireData.bullet === "full" ? "ciphershot.mp4" : "cipherblank.mp4");
-                    }
-                    playVideo(videoSrc); 
-
-                })
-                .catch(error => {
-                    console.error("Error during fire action:", error);
-                    alert("An error occurred during turn progression (fire action).");
-                    Array.from(wordsContainer.children).forEach(btn => {
-                        if (btn.tagName === 'BUTTON' && !btn.disabled) {
-                            btn.disabled = false;
-                        }
-                    });
-                    turn = null;
                 });
 
-            } else {
-              attemptsLeft = result.attemptsLeft; 
-              mistakesInfo.textContent = `Attempts left: ${attemptsLeft}, common letters: ${result.commonLetters}`;
-              Array.from(wordsContainer.children).forEach(btn => {
-                  if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) { 
-                      btn.disabled = false;
-                  }
-              });
+                video.addEventListener('error', (e) => {
+                    console.error(`Error preloading ${asset}:`, e);
+                    loadedCount++; // Still count it, even if failed, to avoid hanging
+                    updateProgressBar();
+                    if (loadedCount === videoAssets.length) {
+                        onAssetsLoaded();
+                    }
+                });
+            });
+        }
+
+        // NEW: Function to call once all assets are loaded
+        function onAssetsLoaded() {
+            console.log("All assets preloaded!");
+            // Now start the game fetch
+            fetch(`https://cipher-proxy.onrender.com/proxy?action=startGame&userId=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    puzzleWords = data.puzzleWords;
+                    attemptsLeft = 3;
+                    userHp = data.userHp;
+                    cipherHp = data.cipherHp;
+                    guessedWords.clear(); 
+                    renderWords();
+                    updateHpDisplay(); 
+                })
+                .catch(error => {
+                    console.error("Error starting game:", error);
+                    wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to load game. Please try again.</div>`;
+                    hpInfo.textContent = "";
+                });
+        }
+
+        function enableAudio() {
+            audio.play().catch((e) => console.log('Auto-play blocked:', e));
+            document.removeEventListener('click', enableAudio);
+        }
+        document.addEventListener('click', enableAudio);
+
+        showLoadingMessage(); // Initial call to show loading message and start preloading
+
+
+        function renderWords() {
+            wordsContainer.innerHTML = ""; // Clear loading message and progress bar
+            const loadingMessageElement = document.getElementById('loading-message');
+            if (loadingMessageElement) {
+                loadingMessageElement.remove();
             }
-          })
-          .catch(error => {
-            console.error("Error submitting guess:", error);
+            const progressBarContainer = document.getElementById('progressBarContainer');
+            if (progressBarContainer) {
+                progressBarContainer.remove();
+            }
+            mistakesInfo.textContent = "";
+            puzzleWords.forEach(word => {
+                const btn = document.createElement("button");
+                btn.textContent = word;
+                btn.className = "word-button";
+                btn.disabled = guessedWords.has(word); 
+                btn.onclick = () => submitGuess(word, btn);
+                wordsContainer.appendChild(btn);
+            });
+        }
+
+        function updateHpDisplay() {
+            hpInfo.textContent = `User HP: ${userHp} | Cipher HP: ${cipherHp}`;
+        }
+
+        function submitGuess(word, button) {
+            if (turn || gameOver) return; 
+            
             Array.from(wordsContainer.children).forEach(btn => {
-                if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) {
-                    btn.disabled = false;
+                if (btn.tagName === 'BUTTON') {
+                    btn.disabled = true;
                 }
             });
-            alert("An error occurred. Please try again.");
-          });
-      }
 
-      function handleTurn(bulletType) {}
-		  
-      function playVideo(src) {
-        avatar.src = src;
-        avatar.loop = false;
-        avatar.muted = false; 
-        avatar.play();
-        avatar.onended = () => {
-            updateHpDisplay(); 
+            fetch(`https://cipher-proxy.onrender.com/proxy?action=submitGuess&userId=${userId}&word=${word}`)
+            .then(res => res.json())
+            .then(result => {
+                if (result.error) {
+                alert(result.error);
+                Array.from(wordsContainer.children).forEach(btn => {
+                    if (btn.tagName === 'BUTTON' && btn !== button) {
+                        btn.disabled = false;
+                    }
+                });
+                return;
+                }
 
-            if (gameOver) {
-                displayGameOverMessage(winnerIs); 
-            } else {
-                avatar.src = "avatar.mp4";
-                avatar.loop = true;
-                avatar.muted = true; 
-                avatar.play();
-                
-                guessedWords.clear(); 
-                fetch(`https://cipher-proxy.onrender.com/proxy?action=generateNewPuzzle&userId=${userId}`)
-                    .then(puzzleRes => puzzleRes.json())
-                    .then(puzzleData => {
-                        if (puzzleData.error) {
-                            console.error("Puzzle error:", puzzleData.error);
-                            wordsContainer.innerHTML = `<div class="game-over-message lose-message">Error loading next puzzle</div>`;
-                            return;
+                button.disabled = true;
+                guessedWords.add(word); 
+
+                if (result.correct || (result.attemptsLeft === 0 && result.nextTurn === "cipher")) {
+                    turn = result.nextTurn; 
+                    fetch(`https://cipher-proxy.onrender.com/proxy?action=fire&userId=${userId}`)
+                    .then(fireRes => fireRes.json())
+                    .then(fireData => {
+                        userHp = fireData.userHp;
+                        cipherHp = fireData.cipherHp;
+                        
+                        if (fireData.gameOver) {
+                            gameOver = true;
+                            winnerIs = fireData.winner; 
                         }
 
-                        puzzleWords = puzzleData.puzzleWords;
-                        attemptsLeft = puzzleData.attemptsLeft || 3;
-                        renderWords();
-                        mistakesInfo.textContent = "";
-                        turn = null; 
+                        let videoSrc;
+                        if (turn === "user") {
+                            videoSrc = (fireData.bullet === "full" ? "usershot.mp4" : "userblank.mp4");
+                        } else { 
+                            videoSrc = (fireData.bullet === "full" ? "ciphershot.mp4" : "cipherblank.mp4");
+                        }
+                        fadeAndPlayVideo(videoSrc); 
+
                     })
                     .catch(error => {
-                        console.error("Error generating new puzzle:", error);
-                        wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to get new puzzle.</div>`;
+                        console.error("Error during fire action:", error);
+                        alert("An error occurred during turn progression (fire action).");
+                        Array.from(wordsContainer.children).forEach(btn => {
+                            if (btn.tagName === 'BUTTON' && !btn.disabled) {
+                                btn.disabled = false;
+                            }
+                        });
                         turn = null;
                     });
+
+                } else {
+                attemptsLeft = result.attemptsLeft; 
+                mistakesInfo.textContent = `Attempts left: ${attemptsLeft}, common letters: ${result.commonLetters}`;
+                Array.from(wordsContainer.children).forEach(btn => {
+                    if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) { 
+                        btn.disabled = false;
+                    }
+                });
+                }
+            })
+            .catch(error => {
+                console.error("Error submitting guess:", error);
+                Array.from(wordsContainer.children).forEach(btn => {
+                    if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) {
+                        btn.disabled = false;
+                    }
+                });
+                alert("An error occurred. Please try again.");
+            });
+        }
+
+        function handleTurn(bulletType) {}
+            
+        function fadeAndPlayVideo(newSrc) {
+            avatar.classList.remove('fade-in'); 
+            avatar.classList.add('fade-out'); 
+
+            const onTransitionEnd = () => {
+                avatar.removeEventListener('transitionend', onTransitionEnd); 
+                
+                avatar.src = newSrc; 
+                avatar.muted = (newSrc === "avatar.mp4"); 
+                avatar.loop = (newSrc === "avatar.mp4" || newSrc === "win.mp4" || newSrc === "lose.mp4"); 
+                
+                avatar.load(); 
+                avatar.play().catch(e => console.log("Video play blocked:", e)); 
+                
+                avatar.classList.remove('fade-out'); 
+                avatar.classList.add('fade-in'); 
+
+                setTimeout(() => { 
+                    avatar.classList.remove('fade-in'); 
+
+                    if (gameOver) {
+                        // Game is over, nothing more to do here. displayGameOverMessage has already been called.
+                    } else {
+                        updateHpDisplay(); 
+                        guessedWords.clear(); 
+                        fetch(`https://cipher-proxy.onrender.com/proxy?action=generateNewPuzzle&userId=${userId}`)
+                            .then(puzzleRes => puzzleRes.json())
+                            .then(puzzleData => {
+                                if (puzzleData.error) {
+                                    console.error("Puzzle error:", puzzleData.error);
+                                    wordsContainer.innerHTML = `<div class="game-over-message lose-message">Error loading next puzzle.</div>`;
+                                    return;
+                                }
+
+                                puzzleWords = puzzleData.puzzleWords;
+                                attemptsLeft = puzzleData.attemptsLeft || 3;
+                                renderWords();
+                                mistakesInfo.textContent = "";
+                                turn = null; 
+                            })
+                            .catch(error => {
+                                console.error("Error generating new puzzle:", error);
+                                wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to get new puzzle.</div>`;
+                                turn = null;
+                            });
+                    }
+                }, 550); 
+            };
+            avatar.addEventListener('transitionend', onTransitionEnd);
+        }
+
+        function playVideo(src) { 
+            fadeAndPlayVideo(src);
+        }
+
+        function displayGameOverMessage(winner) {
+            wordsContainer.innerHTML = '';
+            hpInfo.textContent = '';
+            mistakesInfo.textContent = '';
+
+            let message = '';
+            let messageClass = '';
+            let finalVideoSrc = '';
+
+            if (winner === "user") {
+            message = "You escaped Liminal";
+            messageClass = "win-message";
+            finalVideoSrc = "win.mp4"; 
+            } else {
+            message = "Access terminated";
+            messageClass = "lose-message";
+            finalVideoSrc = "lose.mp4"; 
             }
-        };
-      }
 
-      function displayGameOverMessage(winner) {
-        wordsContainer.innerHTML = '';
-        hpInfo.textContent = '';
-        mistakesInfo.textContent = '';
+            const gameOverDiv = document.createElement('div');
+            gameOverDiv.className = `game-over-message ${messageClass}`;
+            
+            let i = 0;
+            function typeGameOverText() {
+            if (i < message.length) {
+                gameOverDiv.innerHTML += message.charAt(i);
+                i++;
+                setTimeout(typeGameOverText, 100);
+            } else {
+                restartButton.classList.add('fade-in'); 
+            }
+            }
+            wordsContainer.appendChild(gameOverDiv);
+            typeGameOverText();
 
-        let message = '';
-        let messageClass = '';
-        let finalVideoSrc = '';
-
-        if (winner === "user") {
-          message = "You escaped Liminal";
-          messageClass = "win-message";
-          finalVideoSrc = "win.mp4"; 
-        } else {
-          message = "Access terminated";
-          messageClass = "lose-message";
-          finalVideoSrc = "lose.mp4"; 
+            fadeAndPlayVideo(finalVideoSrc); 
         }
-
-        const gameOverDiv = document.createElement('div');
-        gameOverDiv.className = `game-over-message ${messageClass}`;
-        
-        let i = 0;
-        function typeGameOverText() {
-          if (i < message.length) {
-            gameOverDiv.innerHTML += message.charAt(i);
-            i++;
-            setTimeout(typeGameOverText, 100);
-          } else {
-            // NEW: After message is typed, show the restart button with a fade-in
-            restartButton.classList.add('fade-in'); 
-          }
-        }
-        wordsContainer.appendChild(gameOverDiv);
-        typeGameOverText();
-
-        avatar.src = finalVideoSrc;
-        avatar.loop = true;
-        avatar.muted = false; 
-        avatar.play();
-      }
 
     });
-  </script>
+</script>
 </body>
 </html>
