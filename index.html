@@ -337,20 +337,7 @@
   <audio id="bg-music" src="cipher404.mp3" loop></audio>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        const username = tg.initDataUnsafe?.user?.username || "unknown";
-
-        if (!userId) {
-            alert("User ID not found. Please open this in Telegram.");
-            return;
-        }
-
-        console.log("User ID:", userId);
-        console.log("Username:", username);
+      const userId = "12345"; // In the final version, get this from Telegram
 
         const audio = document.getElementById('bg-music');
         audio.volume = 0.6;
