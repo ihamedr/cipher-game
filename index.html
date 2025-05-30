@@ -5,266 +5,366 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cipher Game</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-   * { margin: 0; padding: 0; box-sizing: border-box; }
-	* {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  -moz-user-select: none !important;
-  -ms-user-select: none !important;
-  outline: none !important;
-  -webkit-tap-highlight-color: transparent; /* مخصوص موبایل برای حذف هایلایت */
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent; /* مخصوص موبایل برای حذف هایلایت */
+  }
 
-    body {
-      font-family: 'Fira Code', monospace;
-      background: radial-gradient(ellipse at center, #000 0%, #020c0f 100%);
-      color: #00ff9f;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: hidden; /* Ensure no unwanted scrollbars */
-    }
+  body {
+    font-family: 'Fira Code', monospace;
+    background: radial-gradient(ellipse at center, #000 0%, #020c0f 100%);
+    color: #00ff9f;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden; /* Ensure no unwanted scrollbars */
+  }
 
-    .matrix-overlay {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(0, 255, 150, 0.05) 0px,
-        rgba(0, 255, 150, 0.05) 1px,
-        transparent 1px,
-        transparent 2px
-      );
-      animation: flicker 3s infinite;
-      z-index: 1;
-    }
+  /* Loading Screen Styles */
+  #loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, #000 0%, #020c0f 100%); /* Match body background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 9999; /* Ensure it's on top of everything */
+    opacity: 1;
+    transition: opacity 0.5s ease-out; /* Smooth fade-out */
+  }
 
-    @keyframes flicker {
-      0%, 100% { opacity: 0.15; }
-      50% { opacity: 0.25; }
-    }
+  #loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none; /* Make it unclickable after fade-out */
+  }
 
-    .avatar-container {
-      z-index: 2;
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%; /* Ensure it takes full width */
-    }
+  .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2dpx solid #00ff9f;
+    border-radius: 8px;
+    box-shadow: 0 0 15px #00ff9f55;
+    width: 80%; /* Responsive width */
+    max-width: 400px; /* Max width for desktop */
+    min-height: 150px; /* Min height for better appearance */
+    justify-content: center;
+  }
 
-    video.avatar {
-      width: 100%;
-      max-height: 400px; /* Keep max height for larger screens */
-      object-fit: contain;
-      background: none;
-      border: none;
-      box-shadow: none;
-      border-radius: 0;
-    }
+  .progress-bar-container {
+    display: flex;
+    width: 90%; /* Width within loading-content */
+    height: 15px;
+    border: 1px solid #00ff9f;
+    margin-top: 20px;
+    overflow: hidden;
+  }
 
+  .bar-segment {
+    flex-grow: 1; /* Each segment grows to fill space */
+    background-color: transparent; /* Initially transparent */
+    border-right: 1px solid rgba(0, 255, 150, 0.1); /* Separator lines */
+    box-sizing: border-box;
+    transition: background-color 0.3s ease-in-out; /* Smooth color change */
+  }
+
+  .bar-segment:last-child {
+    border-right: none; /* No border on the last segment */
+  }
+
+  .bar-segment.loaded {
+    background-color: #00ff9f; /* Color when loaded */
+  }
+
+  .matrix-overlay {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 255, 150, 0.05) 0px,
+      rgba(0, 255, 150, 0.05) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+    animation: flicker 3s infinite;
+    z-index: 1;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.25; }
+  }
+
+  .avatar-container {
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%; /* Ensure it takes full width */
+    padding-top: 20px;
+  }
+
+  video.avatar {
+    width: 100%;
+    max-height: 400px; /* Keep max height for larger screens */
+    object-fit: contain;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    /* REMOVED: transition: opacity 0.5s ease-in-out; / / No fade transition */
+    opacity: 1; /* Always visible */
+  }
+
+  /* REMOVED: Video fade classes (.avatar.fade-out, .avatar.fade-in-transition, .avatar.fade-in) */
+
+  .word-box {
+    z-index: 2;
+    width: 90%; /* Changed to a percentage for responsiveness */
+    max-width: 600px; /* Max width for larger screens */
+    min-height: 400px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00ff9f;
+    border-radius: 8px;
+    margin-bottom: 40px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; 
+    align-items: center;
+    box-shadow: 0 0 15px #00ff9f55;
+  }
+
+  .word-box h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+
+  .hp-display {
+    font-size: 1.2rem;
+    margin-bottom: 15px; 
+    text-align: center;
+    width: 100%;
+  }
+
+  .typing-text {
+    font-size: 1.8rem;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    margin: auto;
+    animation: typing 2s steps(10, end);
+  }
+
+  @keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+  }
+
+  .game-over-message {
+    font-size: 1.8rem;
+    text-align: center;
+    width: 100%;
+    padding: 20px;
+    animation: fadeIn 2s forwards; 
+  }
+
+  @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+  }
+
+  .win-message {
+      color: #00ff9f; 
+  }
+
+  .lose-message {
+      color: #ff3c00; 
+  }
+
+  .words-grid {
+    display: flex;
+    flex-wrap: wrap;           
+    gap: 10px;                 
+    width: 100%;
+    margin-top: 20px;
+    justify-content: center;   
+  }
+
+  .word-button {
+    flex: 1 1 120px;           /* Base for flex-basis (minimum width for each item) */
+    padding: 10px;
+    border: 1px solid #00ff9f;
+    background-color: transparent;
+    color: #00ff9f;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s;
+    white-space: nowrap;       
+    overflow: hidden;
+    text-overflow: ellipsis;   
+    box-sizing: border-box;
+    max-width: 150px;          /* Maximum width for each button */
+  }
+
+  .word-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .restart-button {
+    margin-top: 30px; 
+    padding: 12px 25px;
+    border: 2px solid #00ff9f;
+    background-color: transparent;
+    color: #00ff9f;
+    font-family: 'Fira Code', monospace;
+    font-size: 1.2rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s, opacity 1s ease-in;
+    opacity: 0; 
+    pointer-events: none; 
+  }
+
+  .restart-button:hover {
+    background-color: rgba(0, 255, 150, 0.2);
+  }
+
+  .fade-in {
+      opacity: 1;
+      pointer-events: all;
+  }
+
+  /* --- Media Queries for Responsiveness --- */
+
+  @media (max-width: 768px) {
     .word-box {
-      z-index: 2;
-      width: 90%; /* Changed to a percentage for responsiveness */
-      max-width: 600px; /* Max width for larger screens */
-      min-height: 400px;
-      background: rgba(0, 0, 0, 0.7);
-      border: 2px solid #00ff9f;
-      border-radius: 8px;
-      margin-bottom: 40px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start; 
-      align-items: center;
-      box-shadow: 0 0 15px #00ff9f55;
+      min-height: 300px; 
+      padding: 15px;
     }
 
     .word-box h2 {
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-    }
-
-    .word-box .mistakes {
-      color: #ff3c00;
-      margin-top: 10px;
+      font-size: 1.3rem;
     }
 
     .hp-display {
-      font-size: 1.2rem;
-      margin-bottom: 15px; 
-      text-align: center;
-      width: 100%;
+      font-size: 1rem;
+      margin-bottom: 10px;
     }
 
-    .typing-text {
-      font-size: 1.8rem;
-      text-align: center;
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      margin: auto;
-      animation: typing 2s steps(10, end);
+    .typing-text, .game-over-message {
+      font-size: 1.5rem;
     }
-
-    @keyframes typing {
-      from { width: 0 }
-      to { width: 100% }
-    }
-
-    .game-over-message {
-      font-size: 1.8rem;
-      text-align: center;
-      width: 100%;
-      padding: 20px;
-      animation: fadeIn 2s forwards; 
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    .win-message {
-        color: #00ff9f; 
-    }
-
-    .lose-message {
-        color: #ff3c00; 
-    }
-
-    .words-grid {
-      display: flex;
-      flex-wrap: wrap;           
-      gap: 10px;                 
-      width: 100%;
-      margin-top: 20px;
-      justify-content: center;   
+    
+    .word-box .mistakes { 
+      font-size: 0.8rem; 
     }
 
     .word-button {
-      flex: 1 1 120px;           /* Base for flex-basis (minimum width for each item) */
-      padding: 10px;
-      border: 1px solid #00ff9f;
-      background-color: transparent;
-      color: #00ff9f;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: background 0.3s;
-      white-space: nowrap;       
-      overflow: hidden;
-      text-overflow: ellipsis;   
-      box-sizing: border-box;
-      max-width: 150px;          /* Maximum width for each button */
+      flex: 1 1 calc(33% - 14px); 
+      max-width: calc(33% - 14px); 
+      font-size: 0.9rem; 
+      padding: 8px;
     }
 
-    .word-button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .loading-content {
+      width: 90%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .word-box {
+      min-height: 250px; 
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .avatar-container { 
+      padding-top: 10px;
+    }
+
+    video.avatar { 
+      max-height: 300px;
+    }
+
+    .hp-display {
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .typing-text, .game-over-message {
+      font-size: 1.2rem;
+    }
+
+    .word-box .mistakes { 
+      font-size: 0.7rem; 
+    }
+
+    .word-button {
+      flex: 1 1 calc(50% - 10px); 
+      max-width: calc(50% - 10px); 
+      font-size: 0.8rem; 
+      padding: 6px;
     }
 
     .restart-button {
-      margin-top: 30px; 
-      padding: 12px 25px;
-      border: 2px solid #00ff9f;
-      background-color: transparent;
-      color: #00ff9f;
-      font-family: 'Fira Code', monospace;
-      font-size: 1.2rem;
-      text-align: center;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: background 0.3s, opacity 1s ease-in;
-      opacity: 0; 
-      pointer-events: none; 
+      font-size: 1rem;
+      padding: 10px 20px;
+      margin-top: 20px;
     }
-
-    .restart-button:hover {
-      background-color: rgba(0, 255, 150, 0.2);
+    .loading-content {
+      width: 95%;
     }
+  }
+  button, a, div {
+    outline: none;
+  }
 
-    .fade-in {
-        opacity: 1;
-        pointer-events: all;
-    }
-
-    /* --- Media Queries for Responsiveness --- */
-
-    @media (max-width: 768px) {
-      /* Adjustments for tablets and smaller */
-      .word-box {
-        min-height: 300px; /* Slightly less height for smaller screens */
-        padding: 15px;
-      }
-
-      .word-box h2 {
-        font-size: 1.3rem;
-      }
-
-      .hp-display {
-        font-size: 1rem;
-        margin-bottom: 10px;
-      }
-
-      .typing-text, .game-over-message {
-        font-size: 1.5rem;
-      }
-
-      .word-button {
-        flex: 1 1 calc(33% - 14px); /* Three buttons per row with gap consideration */
-        max-width: calc(33% - 14px); /* Max width for 3 buttons per row */
-        font-size: 0.9rem; /* Smaller font for buttons */
-        padding: 8px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      /* Adjustments for mobile phones */
-      .word-box {
-        min-height: 250px; /* Even less height for small phones */
-        padding: 10px;
-        margin-bottom: 20px;
-      }
-
-      .hp-display {
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-      }
-
-      .typing-text, .game-over-message {
-        font-size: 1.2rem;
-      }
-
-      .word-button {
-        flex: 1 1 calc(50% - 10px); /* Two buttons per row with gap consideration */
-        max-width: calc(50% - 10px); /* Max width for 2 buttons per row */
-        font-size: 0.8rem; /* Even smaller font for buttons */
-        padding: 6px;
-      }
-
-      .restart-button {
-        font-size: 1rem;
-        padding: 10px 20px;
-        margin-top: 20px;
-      }
-    }
- button, a, div {
-  outline: none;
-}
-
-button:focus, a:focus, div:focus {
-  outline: none;
-}
-  </style>
+  button:focus, a:focus, div:focus {
+    outline: none;
+  }
+</style>
 </head>
 <body>
-
+<div id="loading-screen">
+    <div class="loading-content">
+      <div class="typing-text" id="loading-message">Loading...</div>
+      <div class="progress-bar-container">
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+        <div class="bar-segment"></div>
+      </div>
+    </div>
   <div class="matrix-overlay"></div>
+	</div>
 
   <div class="avatar-container">
     <video class="avatar" autoplay muted loop id="avatar-video">
@@ -277,267 +377,366 @@ button:focus, a:focus, div:focus {
     <div class="hp-display" id="hp-info"></div> 
     
     <div id="words-container" class="words-grid"></div>
-    <div class="mistakes" id="mistakes-info"></div> 
-<button id="restart-button" class="restart-button">Restart</button>
+    <div class="mistakes" id="mistakes-info"></div>
+    <button id="restart-button" class="restart-button">Restart</button>
   </div>
 
   <audio id="bg-music" src="cipher404.mp3" loop></audio>
-<script>
+
+  <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const userId = "12345"; 
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-      const audio = document.getElementById('bg-music');
-      audio.volume = 0.6;
-      const avatar = document.getElementById("avatar-video");
+        const userId = tg.initDataUnsafe?.user?.id?.toString();
+        const username = tg.initDataUnsafe?.user?.username || "unknown";
 
-      const wordsContainer = document.getElementById("words-container");
-      const hpInfo = document.getElementById("hp-info");
-      const mistakesInfo = document.getElementById("mistakes-info");
-      const restartButton = document.getElementById("restart-button"); // NEW: Get restart button element
-
-      let puzzleWords = [];
-      let attemptsLeft = 3;
-      let turn = null;
-      let userHp = 0;
-      let cipherHp = 0;
-      let gameOver = false;
-      let winnerIs = null; 
-      let guessedWords = new Set(); 
-
-      // NEW: Add event listener for restart button
-      restartButton.addEventListener('click', () => {
-        location.reload(); // Reloads the entire page
-      });
-
-      function showLoadingMessage() {
-        wordsContainer.innerHTML = `<div class="typing-text" id="loading-message"></div>`;
-        const loadingMessageElement = document.getElementById('loading-message');
-        const text = "Loading...";
-        let i = 0;
-        function typeWriter() {
-          if (i < text.length) {
-            loadingMessageElement.innerHTML += text.charAt(i);
-            i++;
-            setTimeout(typeWriter, 150);
-          }
+        if (!userId) {
+            alert("User ID not found. Please open this in Telegram.");
+            return;
         }
-        typeWriter();
-        hpInfo.textContent = "";
-      }
 
-      function enableAudio() {
-        audio.play().catch((e) => console.log('Auto-play blocked:', e));
-        document.removeEventListener('click', enableAudio);
-      }
-      document.addEventListener('click', enableAudio);
+        console.log("User ID:", userId);
+        console.log("Username:", username);
 
-      showLoadingMessage();
+        const audio = document.getElementById('bg-music');
+        audio.volume = 0.6; // Set desired volume for background music
+        const avatar = document.getElementById("avatar-video");
 
+        const wordsContainer = document.getElementById("words-container");
+        const hpInfo = document.getElementById("hp-info");
+        const mistakesInfo = document.getElementById("mistakes-info");
+        const restartButton = document.getElementById("restart-button"); 
+        const loadingScreen = document.getElementById('loading-screen'); // Get loading screen element
+        const progressSegments = document.querySelectorAll('#loading-screen .bar-segment'); // Get progress bar segments
 
-      fetch(`https://cipher-proxy.onrender.com/proxy?action=startGame&userId=${userId}`)
-        .then(res => res.json())
-        .then(data => {
-          puzzleWords = data.puzzleWords;
-          attemptsLeft = 3;
-          userHp = data.userHp;
-          cipherHp = data.cipherHp;
-          guessedWords.clear(); 
-          renderWords();
-          updateHpDisplay(); 
-        })
-        .catch(error => {
-          console.error("Error starting game:", error);
-          wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to load game. Please try again.</div>`;
-          hpInfo.textContent = "";
+        let puzzleWords = [];
+        let attemptsLeft = 3;
+        let turn = null;
+        let userHp = 0;
+        let cipherHp = 0;
+        let gameOver = false;
+        let winnerIs = null; 
+        let guessedWords = new Set(); 
+
+        // List of all video assets to preload
+        const videoAssets = [
+            "avatar.mp4", // This is the base video for the avatar
+            "usershot.mp4",
+            "userblank.mp4",
+            "ciphershot.mp4",
+            "cipherblank.mp4",
+            "win.mp4",
+            "lose.mp4"
+        ];
+        // Cached video objects
+        const videoCache = {};
+        let loadedCount = 0; // Preloading counter
+
+        restartButton.addEventListener('click', () => {
+            location.reload(); 
         });
 
-
-      function renderWords() {
-        wordsContainer.innerHTML = "";
-        const loadingMessageElement = document.getElementById('loading-message');
-        if (loadingMessageElement) {
-            loadingMessageElement.remove();
+        // Function to attempt autoplay for background music
+        function attemptAutoplay() {
+            audio.play()
+                .then(() => {
+                    console.log("Audio autoplayed successfully.");
+                })
+                .catch((e) => {
+                    console.warn("Autoplay blocked, attempting muted autoplay:", e);
+                    audio.muted = true; // Mute if autoplay with sound is blocked
+                    audio.play()
+                        .then(() => {
+                            console.log("Audio autoplayed successfully (muted).");
+                        })
+                        .catch((e2) => {
+                            console.error("Muted autoplay also blocked:", e2);
+                        });
+                });
         }
-        mistakesInfo.textContent = "";
-        puzzleWords.forEach(word => {
-          const btn = document.createElement("button");
-          btn.textContent = word;
-          btn.className = "word-button";
-          btn.disabled = guessedWords.has(word); 
-          btn.onclick = () => submitGuess(word, btn);
-          wordsContainer.appendChild(btn);
-        });
-      }
-
-      function updateHpDisplay() {
-        hpInfo.textContent = `User HP: ${userHp} | Cipher HP: ${cipherHp}`;
-      }
-
-      function submitGuess(word, button) {
-        if (turn || gameOver) return; 
         
-        Array.from(wordsContainer.children).forEach(btn => {
-            if (btn.tagName === 'BUTTON') {
-                btn.disabled = true;
-            }
-        });
+        // Preload function
+        function preloadVideos(onComplete) {
+            videoAssets.forEach((src, index) => {
+                const video = document.createElement("video");
+                video.src = src;
+                video.preload = "auto";
+                video.style.display = 'none'; // Keep them hidden
+                document.body.appendChild(video); // Append to DOM to trigger loading
 
-        fetch(`https://cipher-proxy.onrender.com/proxy?action=submitGuess&userId=${userId}&word=${word}`)
-          .then(res => res.json())
-          .then(result => {
-            if (result.error) {
-              alert(result.error);
-              Array.from(wordsContainer.children).forEach(btn => {
-                if (btn.tagName === 'BUTTON' && btn !== button) {
-                    btn.disabled = false;
-                }
-              });
-              return;
-            }
-
-            button.disabled = true;
-            guessedWords.add(word); 
-
-            if (result.correct || (result.attemptsLeft === 0 && result.nextTurn === "cipher")) {
-                turn = result.nextTurn; 
-                fetch(`https://cipher-proxy.onrender.com/proxy?action=fire&userId=${userId}`)
-                .then(fireRes => fireRes.json())
-                .then(fireData => {
-                    userHp = fireData.userHp;
-                    cipherHp = fireData.cipherHp;
-                    
-                    if (fireData.gameOver) {
-                        gameOver = true;
-                        winnerIs = fireData.winner; 
+                video.oncanplaythrough = () => {
+                    videoCache[src] = video; // Store the video element in cache
+                    loadedCount++;
+                    // Update progress bar segment
+                    if (progressSegments[index]) {
+                        progressSegments[index].classList.add('loaded');
                     }
 
-                    let videoSrc;
-                    if (turn === "user") {
-                        videoSrc = (fireData.bullet === "full" ? "usershot.mp4" : "userblank.mp4");
-                    } else { 
-                        videoSrc = (fireData.bullet === "full" ? "ciphershot.mp4" : "cipherblank.mp4");
+                    if (loadedCount === videoAssets.length) {
+                        setTimeout(() => {
+                            loadingScreen.classList.add('hidden'); // Hide loading screen
+                            // Ensure it's fully hidden after transition
+                            loadingScreen.addEventListener('transitionend', () => {
+                                loadingScreen.style.display = 'none';
+                            }, { once: true });
+                            onComplete(); // Call game start function
+                        }, 500); // Small delay for smooth transition
                     }
-                    playVideo(videoSrc); 
+                };
 
+                video.onerror = () => {
+                    console.error("Failed to load video:", src);
+                    // Even if error, count it to prevent hanging the loading
+                    loadedCount++; 
+                    if (loadedCount === videoAssets.length) {
+                        setTimeout(() => {
+                            loadingScreen.classList.add('hidden');
+                            loadingScreen.addEventListener('transitionend', () => {
+                                loadingScreen.style.display = 'none';
+                            }, { once: true });
+                            onComplete();
+                        }, 500);
+                    }
+                };
+            });
+        }
+
+        // Modified playCachedVideo for instant playback without fade
+        function playCachedVideo(src, onEndCallback = null) {
+            const cached = videoCache[src];
+            if (!cached) {
+                console.warn("Video not found in cache:", src);
+                // Fallback to directly setting src if not cached
+                avatar.src = src; 
+            } else {
+                avatar.src = cached.src; // Set src from cached video
+            }
+            
+            // Set mute and loop properties based on the new video source
+            avatar.muted = (src === "avatar.mp4"); // Mute only the base avatar video
+            // Loop avatar.mp4, win.mp4, and lose.mp4
+            avatar.loop = (src === "avatar.mp4" || src === "win.mp4" || src === "lose.mp4"); 
+            
+            avatar.currentTime = 0; // Always start from the beginning
+            
+            // Clear any previous onended listener to prevent conflicts
+            avatar.onended = null;
+            if (onEndCallback) {
+                avatar.onended = onEndCallback;
+            }
+
+            avatar.load(); // Reload video to ensure it plays from start if source changed
+            avatar.play().catch(e => console.warn("Video playback failed:", e)); 
+        }
+
+        // This function starts the actual game logic after preloading
+        function startGameLogic() {
+            console.log("🎮 Game started!");
+            // Initialize game state with first puzzle
+            fetch(`https://cipher-proxy.onrender.com/proxy?action=startGame&userId=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    puzzleWords = data.puzzleWords;
+                    attemptsLeft = 3;
+                    userHp = data.userHp;
+                    cipherHp = data.cipherHp;
+                    guessedWords.clear(); 
+                    renderWords(); // Render game UI (words, etc.)
+                    updateHpDisplay(); // Display initial HP
+                    playCachedVideo("avatar.mp4"); // Start with the base avatar video
                 })
                 .catch(error => {
-                    console.error("Error during fire action:", error);
-                    alert("An error occurred during turn progression (fire action).");
+                    console.error("Error starting game:", error);
+                    wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to load game. Please try again.</div>`;
+                    hpInfo.textContent = ""; // Clear HP info on error
+                });
+        }
+
+        function renderWords() {
+            wordsContainer.innerHTML = ""; // Clear loading message and progress bar
+            // Ensure loading elements are fully removed
+            mistakesInfo.textContent = ""; 
+            puzzleWords.forEach(word => {
+                const btn = document.createElement("button");
+                btn.textContent = word;
+                btn.className = "word-button";
+                btn.disabled = guessedWords.has(word); 
+                btn.onclick = () => submitGuess(word, btn);
+                wordsContainer.appendChild(btn);
+            });
+        }
+
+        function updateHpDisplay() {
+            hpInfo.textContent = `User HP: ${userHp} | Cipher HP: ${cipherHp}`;
+        }
+
+        function submitGuess(word, button) {
+            if (turn || gameOver) return; 
+            
+            Array.from(wordsContainer.children).forEach(btn => {
+                if (btn.tagName === 'BUTTON') {
+                    btn.disabled = true;
+                }
+            });
+
+            fetch(`https://cipher-proxy.onrender.com/proxy?action=submitGuess&userId=${userId}&word=${word}`)
+            .then(res => res.json())
+            .then(result => {
+                if (result.error) {
+                    alert(result.error);
                     Array.from(wordsContainer.children).forEach(btn => {
-                        if (btn.tagName === 'BUTTON' && !btn.disabled) {
+                        if (btn.tagName === 'BUTTON' && btn !== button) {
                             btn.disabled = false;
                         }
                     });
-                    turn = null;
-                });
-
-            } else {
-              attemptsLeft = result.attemptsLeft; 
-              mistakesInfo.textContent = `Attempts left: ${attemptsLeft}, common letters: ${result.commonLetters}`;
-              Array.from(wordsContainer.children).forEach(btn => {
-                  if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) { 
-                      btn.disabled = false;
-                  }
-              });
-            }
-          })
-          .catch(error => {
-            console.error("Error submitting guess:", error);
-            Array.from(wordsContainer.children).forEach(btn => {
-                if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) {
-                    btn.disabled = false;
+                    return;
                 }
-            });
-            alert("An error occurred. Please try again.");
-          });
-      }
 
-      function handleTurn(bulletType) {}
-		  
-      function playVideo(src) {
-        avatar.src = src;
-        avatar.loop = false;
-        avatar.muted = false; 
-        avatar.play();
-        avatar.onended = () => {
-            updateHpDisplay(); 
+                button.disabled = true;
+                guessedWords.add(word); 
 
-            if (gameOver) {
-                displayGameOverMessage(winnerIs); 
-            } else {
-                avatar.src = "avatar.mp4";
-                avatar.loop = true;
-                avatar.muted = true; 
-                avatar.play();
-                
-                guessedWords.clear(); 
-                fetch(`https://cipher-proxy.onrender.com/proxy?action=generateNewPuzzle&userId=${userId}`)
-                    .then(puzzleRes => puzzleRes.json())
-                    .then(puzzleData => {
-                        if (puzzleData.error) {
-                            console.error("Puzzle error:", puzzleData.error);
-                            wordsContainer.innerHTML = `<div class="game-over-message lose-message">Error loading next puzzle</div>`;
-                            return;
+                if (result.correct || (result.attemptsLeft === 0 && result.nextTurn === "cipher")) {
+                    turn = result.nextTurn; 
+                    fetch(`https://cipher-proxy.onrender.com/proxy?action=fire&userId=${userId}`)
+                    .then(fireRes => fireRes.json())
+                    .then(fireData => {
+                        userHp = fireData.userHp;
+                        cipherHp = fireData.cipherHp;
+                        
+                        if (fireData.gameOver) {
+                            gameOver = true;
+                            winnerIs = fireData.winner; 
                         }
 
-                        puzzleWords = puzzleData.puzzleWords;
-                        attemptsLeft = puzzleData.attemptsLeft || 3;
-                        renderWords();
-                        mistakesInfo.textContent = "";
-                        turn = null; 
+                        let videoSrc;
+                        if (turn === "user") {
+                            videoSrc = (fireData.bullet === "full" ? "usershot.mp4" : "userblank.mp4");
+                        } else { 
+                            videoSrc = (fireData.bullet === "full" ? "ciphershot.mp4" : "cipherblank.mp4");
+                        }
+                        
+                        // Play the shot/blank video and handle post-video logic
+                        playCachedVideo(videoSrc, () => {
+                            updateHpDisplay(); // Update HP after shot animation ends
+
+                            if (gameOver) {
+                                displayGameOverMessage(winnerIs); 
+                            } else {
+                                // Revert to base avatar video and load new puzzle
+                                playCachedVideo("avatar.mp4"); 
+                                guessedWords.clear(); 
+                                fetch(`https://cipher-proxy.onrender.com/proxy?action=generateNewPuzzle&userId=${userId}`)
+                                    .then(puzzleRes => puzzleRes.json())
+                                    .then(puzzleData => {
+                                        if (puzzleData.error) {
+                                            console.error("Puzzle error:", puzzleData.error);
+                                            wordsContainer.innerHTML = `<div class="game-over-message lose-message">Error loading next puzzle.</div>`;
+                                            return;
+                                        }
+
+                                        puzzleWords = puzzleData.puzzleWords;
+                                        attemptsLeft = puzzleData.attemptsLeft || 3;
+                                        renderWords();
+                                        mistakesInfo.textContent = "";
+                                        turn = null; 
+                                    })
+                                    .catch(error => {
+                                        console.error("Error generating new puzzle:", error);
+                                        wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to get new puzzle.</div>`;
+                                        turn = null;
+                                    });
+                            }
+                        }); 
+
                     })
                     .catch(error => {
-                        console.error("Error generating new puzzle:", error);
-                        wordsContainer.innerHTML = `<div class="game-over-message lose-message">Failed to get new puzzle.</div>`;
+                        console.error("Error during fire action:", error);
+                        alert("An error occurred during turn progression (fire action).");
+                        Array.from(wordsContainer.children).forEach(btn => {
+                            if (btn.tagName === 'BUTTON' && !btn.disabled) {
+                                btn.disabled = false;
+                            }
+                        });
                         turn = null;
                     });
+
+                } else {
+                    attemptsLeft = result.attemptsLeft; 
+                    mistakesInfo.textContent = `Attempts left: ${attemptsLeft}, common letters: ${result.commonLetters}`;
+                    Array.from(wordsContainer.children).forEach(btn => {
+                        if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) { 
+                            btn.disabled = false;
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error submitting guess:", error);
+                Array.from(wordsContainer.children).forEach(btn => {
+                    if (btn.tagName === 'BUTTON' && !guessedWords.has(btn.textContent)) {
+                        btn.disabled = false;
+                    }
+                    else if (btn.tagName === 'BUTTON' && btn === button) { // Ensure the clicked button remains disabled on error
+                        btn.disabled = true;
+                    }
+                });
+                alert("An error occurred. Please try again.");
+            });
+        }
+
+        // Redundant handleTurn, can be removed
+        function handleTurn(bulletType) {} 
+            
+        // Original playVideo function is replaced by playCachedVideo.
+        // This function is kept as a wrapper to avoid breaking existing calls to playVideo.
+        function playVideo(src) { 
+            playCachedVideo(src);
+        }
+
+        function displayGameOverMessage(winner) {
+            wordsContainer.innerHTML = '';
+            hpInfo.textContent = '';
+            mistakesInfo.textContent = '';
+
+            let message = '';
+            let messageClass = '';
+            let finalVideoSrc = '';
+
+            if (winner === "user") {
+                message = "You escaped Liminal";
+                messageClass = "win-message";
+                finalVideoSrc = "win.mp4"; 
+            } else {
+                message = "Access terminated";
+                messageClass = "lose-message";
+                finalVideoSrc = "lose.mp4"; 
             }
-        };
-      }
 
-      function displayGameOverMessage(winner) {
-        wordsContainer.innerHTML = '';
-        hpInfo.textContent = '';
-        mistakesInfo.textContent = '';
+            const gameOverDiv = document.createElement('div');
+            gameOverDiv.className = `game-over-message ${messageClass}`;
+            
+            let i = 0;
+            function typeGameOverText() {
+                if (i < message.length) {
+                    gameOverDiv.innerHTML += message.charAt(i);
+                    i++;
+                    setTimeout(typeGameOverText, 100);
+                } else {
+                    restartButton.classList.add('fade-in'); 
+                }
+            }
+            wordsContainer.appendChild(gameOverDiv);
+            typeGameOverText();
 
-        let message = '';
-        let messageClass = '';
-        let finalVideoSrc = '';
-
-        if (winner === "user") {
-          message = "You escaped Liminal";
-          messageClass = "win-message";
-          finalVideoSrc = "win.mp4"; 
-        } else {
-          message = "Access terminated";
-          messageClass = "lose-message";
-          finalVideoSrc = "lose.mp4"; 
+            // Play the final win/lose video
+            playCachedVideo(finalVideoSrc); 
         }
 
-        const gameOverDiv = document.createElement('div');
-        gameOverDiv.className = `game-over-message ${messageClass}`;
-        
-        let i = 0;
-        function typeGameOverText() {
-          if (i < message.length) {
-            gameOverDiv.innerHTML += message.charAt(i);
-            i++;
-            setTimeout(typeGameOverText, 100);
-          } else {
-            // NEW: After message is typed, show the restart button with a fade-in
-            restartButton.classList.add('fade-in'); 
-          }
-        }
-        wordsContainer.appendChild(gameOverDiv);
-        typeGameOverText();
-
-        avatar.src = finalVideoSrc;
-        avatar.loop = true;
-        avatar.muted = false; 
-        avatar.play();
-      }
-
+        // --- Initial calls to start the application flow ---
+        attemptAutoplay(); // Attempt to autoplay background music
+        preloadVideos(startGameLogic); // Start preloading and then begin game logic
     });
-  </script>
+</script>
 </body>
 </html>
