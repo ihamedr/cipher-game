@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cipher Game</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   * {
@@ -376,19 +375,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        const userId = tg.initDataUnsafe?.user?.id?.toString();
-        const username = tg.initDataUnsafe?.user?.username || "unknown";
-
-        if (!userId) {
-            alert("User ID not found. Please open this in Telegram.");
-            return;
-        }
-
-        console.log("User ID:", userId);
-        console.log("Username:", username);
+       const userId = 12345;
 
         const audio = document.getElementById('bg-music');
         audio.volume = 0.6; // Set desired volume for background music
