@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cipher Game</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   * {
@@ -337,7 +336,10 @@
   <audio id="bg-music" src="cipher404.mp3" loop></audio>
 
   <script>
-      const userId = "12345"; // In the final version, get this from Telegram
+      
+	  document.addEventListener('DOMContentLoaded', function () {
+
+	  const userId = "12345"; // In the final version, get this from Telegram
 
         const audio = document.getElementById('bg-music');
         audio.volume = 0.6;
